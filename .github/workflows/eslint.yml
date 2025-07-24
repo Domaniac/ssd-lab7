@@ -15,10 +15,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-    - name: Remove eslint.config.mjs (if exists) and rename .eslintrc.js
-      run: |
-        rm -f eslint.config.mjs
-        mv .eslintrc.js .eslintrc.cjs # Rename the file
     - name: Install Dependencies
       run: npm install eslint @microsoft/eslint-formatter-sarif eslint-plugin-security --save-dev
     - name: Create Reports Directory
