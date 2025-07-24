@@ -5,10 +5,16 @@ on: [push, pull_request]
 jobs:
   eslint:
     runs-on: ubuntu-latest
+    permissions: # Add these permissions for SARIF upload and checkout
+      contents: write # Needed for actions/checkout v4 with fetch-depth: 0, and potentially for security features
+      pull-requests: write # Needed for certain CodeQL features, good practice for security scans
+      security-events: write # Absolutely essential for uploading SARIF results
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # Ensure full history for accurate analysis
       - name: Cache Node.js modules
         uses: actions/cache@v4
         with:
@@ -23,13 +29,16 @@ jobs:
         run: mkdir -p reports
 
       - name: Install ESLint SARIF Formatter
+        # This step might be redundant if npm install already covers it via package.json
         run: npm install @microsoft/eslint-formatter-sarif --save-dev
 
       - name: Run ESLint with SARIF output
-        run: npx eslint . --format @microsoft/eslint-formatter-sarif --output-file reports/eslint-results.sarif || true
+        # Removed || true to expose actual ESLint errors
+        run: npx eslint . --format @microsoft/eslint-formatter-sarif --output-file reports/eslint-results.sarif
 
       - name: Debug ESLint Output
-        run: cat reports/eslint-results.sarif || echo "No SARIF report generated"
+        # This step will now only run if ESLint successfully generates the file
+        run: cat reports/eslint-results.sarif || echo "No SARIF report generated (ESLint step failed or didn't create it)"
 
       - name: Upload SARIF report
         uses: github/codeql-action/upload-sarif@v3
