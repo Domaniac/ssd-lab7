@@ -5,39 +5,58 @@ on: [push, pull_request]
 jobs:
   eslint:
     runs-on: ubuntu-latest
-    permissions: # Add these permissions for SARIF upload and checkout
-      contents: write # Needed for actions/checkout v4 with fetch-depth: 0, and potentially for security features
-      pull-requests: write # Needed for certain CodeQL features, good practice for security scans
-      security-events: write # Absolutely essential for uploading SARIF results
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0 # Ensure full history for accurate analysis
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-modules
+          node-version: '18' # Ensure this matches your local Node.js version
+
+      - name: Debug: List files before dependency cleanup
+        run: ls -la #
+
+      - name: Clean node_modules and old config files
+        run: |
+          echo "Cleaning up node_modules and old config files..."
+          rm -rf node_modules # Force remove node_modules
+          rm -f .eslintrc.cjs
+          rm -f .eslintrc.js
+          rm -f eslint.config.mjs
+          echo "Cleanup complete."
+
+      - name: Debug: List files after cleanup
+        run: ls -la # Verify node_modules is gone
 
       - name: Install Node.js dependencies
-        run: npm install
+        # Use npm ci for clean installs based on package-lock.json
+        run: npm ci # This is more reliable in CI/CD than npm install
+        env:
+          CI: true # Tell npm to behave like in a CI environment
+
+      - name: Debug: List installed npm packages and versions
+        run: npm list eslint eslint-plugin-react @eslint/js globals @microsoft/eslint-formatter-sarif eslint-plugin-security || true # List specific packages to confirm versions and presence. || true to prevent failure if not found.
+
+      - name: Debug: Check ESLint version explicitly
+        run: npx eslint --version
 
       - name: Create reports directory
         run: mkdir -p reports
 
-      - name: Install ESLint SARIF Formatter
-        # This step might be redundant if npm install already covers it via package.json
-        run: npm install @microsoft/eslint-formatter-sarif --save-dev
-
       - name: Run ESLint with SARIF output
-        # Removed || true to expose actual ESLint errors
+        # Assuming eslint.config.js is at the root and correctly configured.
+        # If you are using .eslintrc.cjs, you MUST add --config .eslintrc.cjs here.
         run: npx eslint . --format @microsoft/eslint-formatter-sarif --output-file reports/eslint-results.sarif
 
       - name: Debug ESLint Output
-        # This step will now only run if ESLint successfully generates the file
         run: cat reports/eslint-results.sarif || echo "No SARIF report generated (ESLint step failed or didn't create it)"
 
       - name: Upload SARIF report
