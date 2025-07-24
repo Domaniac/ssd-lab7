@@ -16,13 +16,13 @@ jobs:
       with:
         node-version: '18'
     - name: Remove eslint.config.mjs (if exists)
-      run: rm -f eslint.config.mjs # Ensure .eslintrc.js is used
+      run: rm -f eslint.config.mjs
     - name: Install Dependencies
       run: npm install eslint @microsoft/eslint-formatter-sarif eslint-plugin-security --save-dev
     - name: Create Reports Directory
       run: mkdir -p reports
     - name: Run ESLint
-      run: npx eslint --format=@microsoft/eslint-formatter-sarif --output-file=reports/eslint-results.sarif .
+      run: npx eslint --config .eslintrc.js --format=@microsoft/eslint-formatter-sarif --output-file=reports/eslint-results.sarif . # Added --config .eslintrc.js
     - name: Upload SARIF report
       uses: github/codeql-action/upload-sarif@v3
       with:
