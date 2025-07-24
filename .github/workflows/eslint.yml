@@ -14,14 +14,14 @@ jobs:
     - name: Install Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18' # Use a Node.js version compatible with your project
+        node-version: '18'
     - name: Install Dependencies
       run: npm install
     - name: Create Reports Directory
-      run: mkdir -p reports # Add this step to explicitly create the directory
+      run: mkdir -p reports
     - name: Run ESLint
       run: npx eslint --format=@microsoft/eslint-formatter-sarif --output-file=reports/eslint-results.sarif .
-      continue-on-error: true
+      # Removed: continue-on-error: true
     - name: Upload SARIF report
       uses: github/codeql-action/upload-sarif@v3
       with:
